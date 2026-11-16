@@ -2,41 +2,246 @@
 
 **Your business. Orchestrated.**
 
-Plateforme SaaS multi-entreprises qui confie les tâches administratives répétitives à des agents IA spécialisés (Email, Document, Admin), supervisés par un Manager Agent.
+ORKESTRA est une plateforme SaaS multi-entreprises qui confie les tâches administratives et opérationnelles répétitives à des agents IA spécialisés, supervisés par un agent central : le **Manager Agent**.
 
-> Statut : squelette du projet (étape 4 — fondations). Aucune fonctionnalité métier n'est encore implémentée.
+Premier marché visé : les PME du bâtiment et de la maintenance (plombiers, électriciens, chauffagistes, entreprises de rénovation et de maintenance). L'architecture est prévue pour s'ouvrir à d'autres secteurs.
 
-## Structure
+> **Statut : pré-alpha — fondations techniques.**
+> Le monorepo, la configuration TypeScript, Next.js, Prisma et Vitest sont en place et vérifiés (typecheck, build et tests passent).
+> Aucune fonctionnalité métier n'est encore implémentée : pas d'authentification, pas d'agents, pas de base de données remplie.
+
+---
+
+## Sommaire
+
+- [Vision du produit](#vision-du-produit)
+- [Avancement](#avancement)
+- [Stack technique](#stack-technique)
+- [Structure du projet](#structure-du-projet)
+- [Installation](#installation)
+- [Scripts disponibles](#scripts-disponibles)
+- [Variables d'environnement](#variables-denvironnement)
+- [Principes d'architecture](#principes-darchitecture)
+- [Sécurité](#sécurité)
+- [Méthode de travail](#méthode-de-travail)
+- [Licence](#licence)
+
+---
+
+## Vision du produit
+
+ORKESTRA aide les entreprises à gagner du temps, réduire les tâches répétitives et limiter les erreurs administratives. Ce n'est ni un outil de surveillance des salariés, ni un outil de remplacement du personnel.
+
+| Agent | Rôle prévu |
+|---|---|
+| **Email Agent** | Classe les e-mails autorisés, identifie les demandes clients et les urgences, prépare des réponses. |
+| **Document Agent** | Extrait et vérifie les données des documents, prépare devis et documents administratifs. |
+| **Admin Agent** | Prépare rendez-vous et rappels, suit les tâches et les échéances. |
+| **Manager Agent** | Supervise les autres agents à partir de leurs résultats réels (statuts, données, journaux), relance les tâches sans risque, crée des incidents, produit des rapports et suit les coûts. |
+
+Le Manager Agent a une autonomie **intermédiaire** : il ne peut ni modifier ses propres permissions, ni supprimer les journaux d'audit, ni effectuer de paiement, ni envoyer de document sensible, ni prendre d'engagement contractuel sans validation humaine.
+
+---
+
+## Avancement
+
+| Étape | Contenu | Statut |
+|---|---|---|
+| 1–3 | Analyse, inventaire, plan de développement | ✅ Terminé |
+| 4 | Fondations techniques (monorepo, TypeScript, Next.js, Prisma, Vitest) | ✅ Squelette en place |
+| — | Module authentification et accès (Better Auth, invitations, 2FA, rôles) | 📝 Plan validé, développement à venir |
+| 5 | Interface et tableau de bord client | ⏳ À faire |
+| 6 | Base de données et API | ⏳ À faire |
+| 7 | Agents IA (Email, Document, Admin) | ⏳ À faire |
+| 8 | Manager Agent | ⏳ À faire |
+| 9 | Espace administrateur ORKESTRA | ⏳ À faire |
+| 10 | Tests complets et sécurisation | ⏳ À faire |
+
+---
+
+## Stack technique
+
+Versions réellement installées dans `pnpm-lock.yaml` :
+
+| Outil | Version | Usage |
+|---|---|---|
+| Node.js | ≥ 22 | Environnement d'exécution |
+| pnpm | 12.21 | Gestion du monorepo |
+| TypeScript | 7.0 (strict) | Langage |
+| Next.js | 16.4 (App Router) | Application web |
+| React | 19.3 | Interface |
+| Prisma | 7.10 | ORM — configuration dans `prisma.config.ts` |
+| PostgreSQL | 16+ recommandé | Base de données |
+| Zod | 4.6 | Validation des entrées |
+| Vitest | 5.1 | Tests unitaires et d'intégration |
+
+Prévus dans les prochaines étapes : Tailwind CSS, shadcn/ui, Better Auth, Resend, OpenAI API / Agents SDK, n8n, Stripe, Playwright.
+
+---
+
+## Structure du projet
 
 ```
 ORKESTRA/
-├── apps/web/            Application Next.js (App Router)
-│   ├── app/             (auth), (dashboard), admin, api
-│   ├── components/      ui, layout, dashboard, agents, admin
-│   ├── lib/
-│   └── hooks/
+├── apps/
+│   └── web/                  Application Next.js (App Router)
+│       ├── app/
+│       │   ├── (auth)/       Pages de connexion
+│       │   ├── (dashboard)/  Espace client
+│       │   ├── admin/        Espace administrateur ORKESTRA
+│       │   └── api/          Routes API
+│       ├── components/       ui, layout, dashboard, agents, admin
+│       ├── lib/              Logique serveur partagée
+│       └── hooks/            Hooks React
 ├── packages/
-│   ├── ai/              agents, tools, prompts, orchestration
-│   ├── database/        client Prisma + repositories
-│   ├── validation/      schémas Zod
-│   └── shared/          types et constantes
-├── prisma/              schema.prisma, seed.ts
-└── tests/               unit, integration, e2e
+│   ├── ai/                   @orkestra/ai — agents, outils, prompts, orchestration
+│   ├── database/             @orkestra/database — client Prisma et repositories
+│   ├── validation/           @orkestra/validation — schémas Zod
+│   └── shared/               @orkestra/shared — types, constantes, identité visuelle
+├── prisma/
+│   ├── schema.prisma         Schéma de la base (modèles ajoutés à l'étape 6)
+│   └── seed.ts               Données de démonstration
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/
+├── prisma.config.ts          Configuration Prisma 7 (URL de la base)
+├── vitest.config.ts
+├── pnpm-workspace.yaml
+├── tsconfig.json             Configuration TypeScript de base (strict)
+└── .env.example              Modèle des variables d'environnement
 ```
 
-## Démarrage
+---
 
-Prérequis : Node.js 22+, pnpm, PostgreSQL.
+## Installation
+
+### 1. Prérequis
+
+- **Node.js 22 ou plus récent** — vérifier avec `node -v`.
+- **pnpm** — l'activer via Corepack (inclus avec Node.js) :
+  ```bash
+  corepack enable
+  pnpm -v
+  ```
+- **PostgreSQL** — nécessaire à partir du module authentification.
+- **Git**.
+
+> ⚠️ Ne place pas le projet dans un dossier synchronisé (iCloud Drive, OneDrive, Dropbox). La synchronisation de `node_modules` et du dossier `.git` provoque lenteurs, fichiers verrouillés et corruptions. Utilise un dossier local (par exemple `C:\dev\ORKESTRA`) et GitHub comme sauvegarde.
+
+### 2. Récupérer le projet
 
 ```bash
-cp .env.example .env      # puis remplir DATABASE_URL
+git clone https://github.com/thomaskongolo11/ORKESTRA.git
+cd ORKESTRA
+```
+
+### 3. Configurer l'environnement
+
+```bash
+# macOS / Linux / PowerShell
+cp .env.example .env
+```
+
+Puis renseigner au minimum `DATABASE_URL` dans `.env`.
+
+### 4. Installer et lancer
+
+```bash
 pnpm install
-pnpm db:generate
 pnpm dev
 ```
 
-## Règles
+L'application est disponible sur <http://localhost:3000>.
 
-- Le projet ne doit pas être placé dans un dossier synchronisé (iCloud, OneDrive) : utiliser un dossier local + Git.
-- Les intégrations simulées sont identifiées comme telles (`ORKESTRA_DEMO_MODE`).
-- Aucune clé API n'est exposée côté navigateur.
+### 5. Vérifier que tout fonctionne
+
+```bash
+pnpm typecheck
+pnpm test
+pnpm build
+```
+
+---
+
+## Scripts disponibles
+
+| Commande | Action |
+|---|---|
+| `pnpm dev` | Lance l'application web en développement |
+| `pnpm build` | Compile l'application pour la production |
+| `pnpm start` | Lance la version compilée |
+| `pnpm typecheck` | Vérifie les types TypeScript de tout le monorepo |
+| `pnpm test` | Exécute les tests Vitest |
+| `pnpm test:watch` | Exécute les tests en continu |
+| `pnpm db:generate` | Génère le client Prisma |
+| `pnpm db:migrate` | Crée et applique une migration Prisma |
+| `pnpm db:seed` | Insère les données de démonstration |
+| `pnpm db:studio` | Ouvre Prisma Studio |
+
+---
+
+## Variables d'environnement
+
+Le fichier `.env.example` sert de modèle. Le fichier `.env` ne doit **jamais** être versionné.
+
+| Variable | Obligatoire | Description |
+|---|---|---|
+| `DATABASE_URL` | Oui | Connexion PostgreSQL |
+| `AUTH_SECRET` | Bientôt | Secret de l'authentification (remplacé par `BETTER_AUTH_SECRET` dans le module auth) |
+| `OPENAI_API_KEY` | Non | Laisser vide tant que les dépenses API ne sont pas autorisées |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Non | Abonnements (étape ultérieure) |
+| `N8N_BASE_URL`, `N8N_API_KEY` | Non | Intégrations (étape ultérieure) |
+| `ORKESTRA_DEMO_MODE` | Oui | `true` : intégrations simulées, aucun appel externe |
+
+Aucune variable secrète ne doit commencer par `NEXT_PUBLIC_` : ce préfixe rend la valeur visible dans le navigateur.
+
+---
+
+## Principes d'architecture
+
+- **Multi-entreprise strict.** Chaque donnée métier est rattachée à une organisation. L'organisation active est déterminée côté serveur à partir de la session, jamais à partir d'une valeur envoyée par le navigateur.
+- **Vérification réelle.** Le Manager Agent contrôle les résultats à partir des statuts d'exécution, des données produites et des journaux, en combinant contrôles déterministes et analyse IA.
+- **Validation humaine.** Les agents préparent ; un humain valide les actions engageantes (devis, factures, paiements, contrats).
+- **Démonstration transparente.** Toute donnée ou intégration simulée est identifiée comme telle. Aucune intégration n'est présentée comme fonctionnelle si elle est simulée.
+- **Traitements longs en arrière-plan.** Les tâches des agents s'exécutent via des workers, pas dans les requêtes web.
+
+---
+
+## Sécurité
+
+- Autorisation vérifiée **côté serveur** à chaque opération protégée ; les contrôles visuels du frontend ne suffisent jamais.
+- Isolation des données entre organisations, couverte par des tests dédiés.
+- Validation de toutes les entrées avec Zod.
+- Journaux d'audit des événements sensibles.
+- Clés API et secrets uniquement côté serveur.
+- Authentification déléguée à une bibliothèque maintenue (Better Auth) : aucun système de mots de passe maison.
+- Double authentification (TOTP) obligatoire pour les administrateurs de la plateforme.
+
+Pour signaler une faille, ne crée pas d'issue publique : contacte directement le propriétaire du dépôt.
+
+---
+
+## Méthode de travail
+
+Le développement avance **étape par étape**. On ne passe à l'étape suivante que si l'étape en cours ne comporte aucune erreur bloquante.
+
+Avant chaque commit :
+
+```bash
+pnpm typecheck
+pnpm test
+```
+
+Conventions :
+
+- branche principale : `main` ;
+- une branche par fonctionnalité (`feat/auth`, `feat/dashboard`…) ;
+- messages de commit explicites, par exemple `feat(auth): add invitation tokens`.
+
+---
+
+## Licence
+
+© 2026 Thomas Kongolo — Tous droits réservés.
+Ce code est propriétaire. Toute copie, distribution ou utilisation sans autorisation écrite est interdite.
