@@ -1,0 +1,11 @@
+// Schéma Prisma ORKESTRA.
+// Les modèles (User, Organization, Agent, Task, Incident, AuditLog, ...) seront ajoutés à l'étape 6.
+// Prisma 7 : l'URL de connexion est définie dans prisma.config.ts (racine du projet), plus ici.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}

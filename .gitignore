@@ -1,0 +1,31 @@
+# Dépendances
+node_modules/
+.pnpm-store/
+
+# Builds
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# Secrets — ne jamais versionner
+.env
+.env.local
+.env.*.local
+
+# Tests
+coverage/
+playwright-report/
+test-results/
+
+# Logs et OS
+*.log
+.DS_Store
+Thumbs.db
+
+# Éditeurs
+.vscode/*
+!.vscode/extensions.json
+.idea/

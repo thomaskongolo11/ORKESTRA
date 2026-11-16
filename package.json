@@ -1,0 +1,30 @@
+{
+  "name": "orkestra",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ORKESTRA — Your business. Orchestrated.",
+  "packageManager": "pnpm@12.21.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @orkestra/web dev",
+    "build": "pnpm --filter @orkestra/web build",
+    "start": "pnpm --filter @orkestra/web start",
+    "typecheck": "tsc --noEmit && pnpm -r typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "dotenv": "^17.0.0",
+    "prisma": "^7.10.1",
+    "tsx": "^4.20.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}

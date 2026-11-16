@@ -1,0 +1,14 @@
+{
+  "name": "@orkestra/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./client.ts",
+  "types": "./client.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.10.1"
+  }
+}
