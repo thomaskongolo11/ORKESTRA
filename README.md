@@ -145,11 +145,20 @@ cp .env.example .env
 
 Puis renseigner au minimum `DATABASE_URL` dans `.env`.
 
-### 4. Installer et lancer
+### 4. Installer, préparer la base et lancer
 
 ```bash
 pnpm install
+pnpm db:generate          # génère le client Prisma (packages/database/generated, non versionné)
+pnpm db:migrate:deploy    # applique les migrations sur DATABASE_URL
 pnpm dev
+```
+
+Pour les tests d'intégration, crée une base séparée (par exemple `orkestra_test`), renseigne `TEST_DATABASE_URL`, puis applique les migrations dessus :
+
+```bash
+# PowerShell
+$env:DATABASE_URL = $env:TEST_DATABASE_URL; pnpm db:migrate:deploy
 ```
 
 L'application est disponible sur <http://localhost:3000>.

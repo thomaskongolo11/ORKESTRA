@@ -9,10 +9,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@better-auth/prisma-adapter": "1.7.25",
     "@orkestra/ai": "workspace:*",
     "@orkestra/database": "workspace:*",
     "@orkestra/shared": "workspace:*",
     "@orkestra/validation": "workspace:*",
+    "better-auth": "1.7.25",
     "next": "^16.4.6",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"

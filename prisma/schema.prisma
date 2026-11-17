@@ -1,11 +1,265 @@
 // Schéma Prisma ORKESTRA.
-// Les modèles (User, Organization, Agent, Task, Incident, AuditLog, ...) seront ajoutés à l'étape 6.
-// Prisma 7 : l'URL de connexion est définie dans prisma.config.ts (racine du projet), plus ici.
+// Prisma 7 : l'URL de connexion est définie dans prisma.config.ts (racine du projet).
+//
+// Organisation du fichier :
+//   1. Modèles gérés par Better Auth (générés avec `npx auth generate`, ne pas renommer
+//      les champs sans mettre à jour la configuration Better Auth).
+//   2. Modèles propres à ORKESTRA (invitations, audit, e-mails).
+// Les modèles métier (Agent, Task, Incident, Subscription...) arrivent à l'étape 6.
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../packages/database/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Énumérations
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Rôle de plateforme. Distinct des rôles d'organisation.
+/// Ne peut être attribué que par le script local `pnpm admin:create`.
+enum PlatformRole {
+  SUPER_ADMIN
+}
+
+/// Rôles d'organisation pouvant être attribués par invitation.
+/// SUPER_ADMIN n'existe volontairement pas ici.
+enum OrgRole {
+  CLIENT_ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum EmailStatus {
+  SIMULATED // Mode développement : aucun envoi réel
+  ACCEPTED // Accepté par Resend (identifiant reçu) — pas une preuve de livraison
+  DELIVERED // Livraison confirmée par webhook Resend
+  BOUNCED
+  FAILED
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. Modèles Better Auth
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id               String        @id
+  name             String
+  email            String
+  emailVerified    Boolean       @default(false)
+  image            String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  twoFactorEnabled Boolean?      @default(false)
+  /// Champ protégé : déclaré `input: false` dans Better Auth.
+  platformRole     PlatformRole?
+
+  sessions                   Session[]
+  accounts                   Account[]
+  twofactors                 TwoFactor[]
+  members                    Member[]
+  betterAuthInvitations      BetterAuthInvitation[]
+  invitationsCreated         Invitation[]           @relation("InvitationCreatedBy")
+  invitationsAccepted        Invitation[]           @relation("InvitationAcceptedBy")
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id                   String   @id
+  expiresAt            DateTime
+  token                String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  ipAddress            String?
+  userAgent            String?
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeOrganizationId String?
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+/// Jetons de vérification et de réinitialisation.
+/// Stockés hachés : `verification.storeIdentifier = "hashed"` dans Better Auth.
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+/// Secret TOTP et codes de récupération, chiffrés par Better Auth (XChaCha20-Poly1305).
+model TwoFactor {
+  id                      String    @id
+  secret                  String
+  backupCodes             String
+  userId                  String
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified                Boolean?  @default(true)
+  failedVerificationCount Int?      @default(0)
+  lockedUntil             DateTime?
+
+  @@index([secret])
+  @@index([userId])
+  @@map("twoFactor")
+}
+
+model Organization {
+  id          String   @id
+  name        String
+  slug        String
+  logo        String?
+  createdAt   DateTime
+  metadata    String?
+
+  members               Member[]
+  betterAuthInvitations BetterAuthInvitation[]
+  invitations           Invitation[]
+
+  @@unique([slug])
+  @@map("organization")
+}
+
+/// Appartenance à une organisation (OrganizationMember).
+/// `role` vaut CLIENT_ADMIN, MANAGER ou EMPLOYEE (contrainte CHECK ajoutée dans la migration).
+model Member {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String       @default("EMPLOYEE")
+  createdAt      DateTime
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
+  @@map("member")
+}
+
+/// Table requise par le plugin organisation de Better Auth.
+/// NON UTILISÉE par ORKESTRA : ses invitations utilisent l'identifiant comme jeton,
+/// sans hachage. Aucun rôle n'a la permission `invitation:create`.
+/// Les invitations ORKESTRA utilisent le modèle `Invitation` ci-dessous.
+model BetterAuthInvitation {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           String?
+  status         String       @default("pending")
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  inviterId      String
+  user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
+  @@map("better_auth_invitation")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. Modèles ORKESTRA
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Invitation ORKESTRA. Le jeton n'est JAMAIS stocké : seul son hash SHA-256 l'est.
+/// Statut déduit des dates : révoquée > acceptée > expirée > en attente.
+model Invitation {
+  id               String       @id @default(cuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  /// Adresse normalisée en minuscules.
+  email            String
+  role             OrgRole
+  tokenHash        String       @unique
+  expiresAt        DateTime
+  createdAt        DateTime     @default(now())
+  createdById      String
+  createdBy        User         @relation("InvitationCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  acceptedAt       DateTime?
+  acceptedByUserId String?
+  acceptedBy       User?        @relation("InvitationAcceptedBy", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
+  revokedAt        DateTime?
+  revokedById      String?
+
+  @@index([organizationId])
+  @@index([email])
+  @@map("invitation")
+}
+
+/// Journal d'audit. Ajout uniquement : la migration installe un trigger qui
+/// interdit UPDATE et DELETE. Pas de clé étrangère pour que l'historique survive
+/// à la suppression d'un utilisateur ou d'une organisation.
+model AuditLog {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  action         String
+  actorUserId    String?
+  organizationId String?
+  targetType     String?
+  targetId       String?
+  ipAddress      String?
+  userAgent      String?
+  metadata       Json?
+
+  @@index([createdAt])
+  @@index([actorUserId])
+  @@index([organizationId])
+  @@index([action])
+  @@map("audit_log")
+}
+
+/// Suivi des e-mails transactionnels. Le contenu n'est PAS stocké
+/// (il peut contenir des liens d'invitation ou de réinitialisation).
+model EmailLog {
+  id                String      @id @default(cuid())
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  template          String
+  toEmail           String
+  subject           String
+  status            EmailStatus
+  provider          String
+  providerMessageId String?     @unique
+  idempotencyKey    String      @unique
+  error             String?
+  userId            String?
+  organizationId    String?
+
+  @@index([toEmail])
+  @@index([status])
+  @@map("email_log")
 }
