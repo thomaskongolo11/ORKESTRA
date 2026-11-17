@@ -145,6 +145,14 @@ cp .env.example .env
 
 Puis renseigner au minimum `DATABASE_URL` dans `.env`.
 
+### 3 bis. Windows : configuration automatique de PostgreSQL
+
+Une fois PostgreSQL installé, ce script crée l'utilisateur `orkestra`, les bases `orkestra` et `orkestra_test`, remplit `.env`, applique les migrations et lance les tests (après `pnpm install` et `pnpm db:generate`) :
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-local-db.ps1
+```
+
 ### 4. Installer, préparer la base et lancer
 
 ```bash
