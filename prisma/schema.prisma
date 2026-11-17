@@ -170,6 +170,18 @@ model Member {
   @@map("member")
 }
 
+/// Compteurs de limitation des tentatives (connexion, 2FA, réinitialisation).
+/// Stockés en base pour fonctionner avec plusieurs instances du serveur.
+model RateLimit {
+  id          String @id
+  key         String
+  count       Int
+  lastRequest BigInt
+
+  @@unique([key])
+  @@map("rateLimit")
+}
+
 /// Table requise par le plugin organisation de Better Auth.
 /// NON UTILISÉE par ORKESTRA : ses invitations utilisent l'identifiant comme jeton,
 /// sans hachage. Aucun rôle n'a la permission `invitation:create`.

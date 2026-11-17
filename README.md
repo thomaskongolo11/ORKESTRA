@@ -49,7 +49,7 @@ Le Manager Agent a une autonomie **intermédiaire** : il ne peut ni modifier ses
 |---|---|---|
 | 1–3 | Analyse, inventaire, plan de développement | ✅ Terminé |
 | 4 | Fondations techniques (monorepo, TypeScript, Next.js, Prisma, Vitest) | ✅ Squelette en place |
-| — | Module authentification et accès (Better Auth, invitations, 2FA, rôles) | 📝 Plan validé, développement à venir |
+| — | Module authentification et accès (Better Auth, invitations, 2FA, rôles) | 🚧 En cours sur `test-auth` (lots A et B faits) |
 | 5 | Interface et tableau de bord client | ⏳ À faire |
 | 6 | Base de données et API | ⏳ À faire |
 | 7 | Agents IA (Email, Document, Admin) | ⏳ À faire |
@@ -195,6 +195,7 @@ pnpm build
 | `pnpm db:migrate` | Crée et applique une migration Prisma |
 | `pnpm db:seed` | Insère les données de démonstration |
 | `pnpm db:studio` | Ouvre Prisma Studio |
+| `pnpm admin:create` | Crée un compte SUPER_ADMIN (script local uniquement, 2FA imposée à la première connexion) |
 
 ---
 
@@ -205,7 +206,11 @@ Le fichier `.env.example` sert de modèle. Le fichier `.env` ne doit **jamais** 
 | Variable | Obligatoire | Description |
 |---|---|---|
 | `DATABASE_URL` | Oui | Connexion PostgreSQL |
-| `AUTH_SECRET` | Bientôt | Secret de l'authentification (remplacé par `BETTER_AUTH_SECRET` dans le module auth) |
+| `BETTER_AUTH_SECRET` | En production | Secret de l'authentification (32 caractères minimum) |
+| `BETTER_AUTH_URL` | Oui | Adresse publique de l'application |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Non | Connexion Google (désactivée si vides) |
+| `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, `MICROSOFT_TENANT_ID` | Non | Connexion Microsoft (désactivée si vides) |
+| `TEST_DATABASE_URL` | Pour les tests | Base dédiée aux tests d'intégration |
 | `OPENAI_API_KEY` | Non | Laisser vide tant que les dépenses API ne sont pas autorisées |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Non | Abonnements (étape ultérieure) |
 | `N8N_BASE_URL`, `N8N_API_KEY` | Non | Intégrations (étape ultérieure) |
