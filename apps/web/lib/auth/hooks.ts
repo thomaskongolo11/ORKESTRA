@@ -37,7 +37,14 @@ function headersOf(ctx: HookContext): Headers | undefined {
   return ctx?.headers ?? ctx?.request?.headers;
 }
 
-export function createAuthHooks(db: PrismaClient) {
+/** Événements de sécurité signalés au titulaire du compte (e-mail + audit). */
+export type SecurityEventHandler = (
+  userId: string,
+  kind: "two-factor-enabled" | "two-factor-disabled" | "account-linked",
+  meta: { detail?: string; ipAddress: string | null; userAgent: string | null },
+) => Promise<void>;
+
+export function createAuthHooks(db: PrismaClient, onSecurityEvent?: SecurityEventHandler) {
   async function isSuperAdmin(userId: unknown): Promise<boolean> {
     if (typeof userId !== "string" || userId.length === 0) return false;
     const user = await db.user.findUnique({ where: { id: userId }, select: { platformRole: true } });
@@ -99,6 +106,16 @@ export function createAuthHooks(db: PrismaClient) {
             throw new APIError("FORBIDDEN", { message: "Le rôle de plateforme ne peut pas être modifié." });
           }
         },
+        /** Activation / désactivation de la 2FA : notification au titulaire. */
+        after: async (user: Record<string, unknown>, ctx: HookContext) => {
+          if (!onSecurityEvent || typeof user.id !== "string") return;
+          const meta = requestMeta(headersOf(ctx));
+          if (ctx?.path === "/two-factor/verify-totp" && user.twoFactorEnabled === true) {
+            await onSecurityEvent(user.id, "two-factor-enabled", meta);
+          } else if (ctx?.path === "/two-factor/disable" && user.twoFactorEnabled === false) {
+            await onSecurityEvent(user.id, "two-factor-disabled", meta);
+          }
+        },
       },
     },
     account: {
@@ -115,6 +132,18 @@ export function createAuthHooks(db: PrismaClient) {
             });
             throw new APIError("FORBIDDEN", { message: "Ce compte se connecte uniquement par e-mail et mot de passe." });
           }
+        },
+        /** Nouvelle méthode de connexion associée à un compte existant : notification. */
+        after: async (account: Record<string, unknown>, ctx: HookContext) => {
+          if (!onSecurityEvent || account.providerId === "credential" || typeof account.userId !== "string") return;
+          const owner = await db.user.findUnique({ where: { id: account.userId }, select: { createdAt: true } });
+          // Compte créé à l'instant (première connexion) : ce n'est pas une association.
+          if (!owner || Date.now() - owner.createdAt.getTime() < 60_000) return;
+          const provider = String(account.providerId);
+          await onSecurityEvent(account.userId, "account-linked", {
+            detail: provider.charAt(0).toUpperCase() + provider.slice(1),
+            ...requestMeta(headersOf(ctx)),
+          });
         },
       },
     },

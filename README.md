@@ -191,6 +191,8 @@ pnpm build
 | `pnpm typecheck` | Vérifie les types TypeScript de tout le monorepo |
 | `pnpm test` | Exécute les tests Vitest |
 | `pnpm test:watch` | Exécute les tests en continu |
+| `pnpm test:e2e` | Tests de bout en bout dans un navigateur (Playwright) |
+| `pnpm screenshots` | Captures d'écran des pages (dossier `screenshots/`) |
 | `pnpm db:generate` | Génère le client Prisma |
 | `pnpm db:migrate` | Crée et applique une migration Prisma |
 | `pnpm db:seed` | Insère les données de démonstration |
@@ -211,6 +213,10 @@ Le fichier `.env.example` sert de modèle. Le fichier `.env` ne doit **jamais** 
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Non | Connexion Google (désactivée si vides) |
 | `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, `MICROSOFT_TENANT_ID` | Non | Connexion Microsoft (désactivée si vides) |
 | `TEST_DATABASE_URL` | Pour les tests | Base dédiée aux tests d'intégration |
+| `EMAIL_MODE` | Oui | `simulated` (développement : aucun envoi réel, lien affiché dans le terminal) ou `resend` (envoi réel). `simulated` est refusé en production |
+| `EMAIL_FROM` | En mode `resend` | Expéditeur, sur un domaine vérifié chez Resend |
+| `EMAIL_REPLY_TO` | Non | Adresse de réponse |
+| `RESEND_API_KEY` | En mode `resend` | Clé API Resend (serveur uniquement) |
 | `OPENAI_API_KEY` | Non | Laisser vide tant que les dépenses API ne sont pas autorisées |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Non | Abonnements (étape ultérieure) |
 | `N8N_BASE_URL`, `N8N_API_KEY` | Non | Intégrations (étape ultérieure) |

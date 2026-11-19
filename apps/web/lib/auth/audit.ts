@@ -9,7 +9,12 @@ export type AuditAction =
   | "auth.super_admin.2fa_disable_blocked"
   | "auth.signup.blocked"
   | "auth.platform_role.change_blocked"
-  | "auth.account_link.blocked";
+  | "auth.account_link.blocked"
+  | "auth.password.changed"
+  | "auth.password.reset_requested"
+  | "auth.2fa.enabled"
+  | "auth.2fa.disabled"
+  | "auth.account.linked";
 
 export type AuditEntry = {
   action: AuditAction;
