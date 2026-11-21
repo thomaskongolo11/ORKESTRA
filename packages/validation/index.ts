@@ -1,4 +1,4 @@
 // Schémas Zod partagés entre le frontend et les API.
-// Les schémas seront ajoutés dans ./schemas au fil des étapes.
 
-export {};
+export * from "./schemas/auth-env";
+export * from "./schemas/email-env";

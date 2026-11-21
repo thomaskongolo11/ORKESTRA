@@ -49,7 +49,7 @@ Le Manager Agent a une autonomie **intermédiaire** : il ne peut ni modifier ses
 |---|---|---|
 | 1–3 | Analyse, inventaire, plan de développement | ✅ Terminé |
 | 4 | Fondations techniques (monorepo, TypeScript, Next.js, Prisma, Vitest) | ✅ Squelette en place |
-| — | Module authentification et accès (Better Auth, invitations, 2FA, rôles) | 📝 Plan validé, développement à venir |
+| — | Module authentification et accès (Better Auth, invitations, 2FA, rôles) | 🚧 En cours sur `test-auth` (lots A et B faits) |
 | 5 | Interface et tableau de bord client | ⏳ À faire |
 | 6 | Base de données et API | ⏳ À faire |
 | 7 | Agents IA (Email, Document, Admin) | ⏳ À faire |
@@ -145,11 +145,28 @@ cp .env.example .env
 
 Puis renseigner au minimum `DATABASE_URL` dans `.env`.
 
-### 4. Installer et lancer
+### 3 bis. Windows : configuration automatique de PostgreSQL
+
+Une fois PostgreSQL installé, ce script crée l'utilisateur `orkestra`, les bases `orkestra` et `orkestra_test`, remplit `.env`, applique les migrations et lance les tests (après `pnpm install` et `pnpm db:generate`) :
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-local-db.ps1
+```
+
+### 4. Installer, préparer la base et lancer
 
 ```bash
 pnpm install
+pnpm db:generate          # génère le client Prisma (packages/database/generated, non versionné)
+pnpm db:migrate:deploy    # applique les migrations sur DATABASE_URL
 pnpm dev
+```
+
+Pour les tests d'intégration, crée une base séparée (par exemple `orkestra_test`), renseigne `TEST_DATABASE_URL`, puis applique les migrations dessus :
+
+```bash
+# PowerShell
+$env:DATABASE_URL = $env:TEST_DATABASE_URL; pnpm db:migrate:deploy
 ```
 
 L'application est disponible sur <http://localhost:3000>.
@@ -174,10 +191,13 @@ pnpm build
 | `pnpm typecheck` | Vérifie les types TypeScript de tout le monorepo |
 | `pnpm test` | Exécute les tests Vitest |
 | `pnpm test:watch` | Exécute les tests en continu |
+| `pnpm test:e2e` | Tests de bout en bout dans un navigateur (Playwright) |
+| `pnpm screenshots` | Captures d'écran des pages (dossier `screenshots/`) |
 | `pnpm db:generate` | Génère le client Prisma |
 | `pnpm db:migrate` | Crée et applique une migration Prisma |
 | `pnpm db:seed` | Insère les données de démonstration |
 | `pnpm db:studio` | Ouvre Prisma Studio |
+| `pnpm admin:create` | Crée un compte SUPER_ADMIN (script local uniquement, 2FA imposée à la première connexion) |
 
 ---
 
@@ -188,7 +208,15 @@ Le fichier `.env.example` sert de modèle. Le fichier `.env` ne doit **jamais** 
 | Variable | Obligatoire | Description |
 |---|---|---|
 | `DATABASE_URL` | Oui | Connexion PostgreSQL |
-| `AUTH_SECRET` | Bientôt | Secret de l'authentification (remplacé par `BETTER_AUTH_SECRET` dans le module auth) |
+| `BETTER_AUTH_SECRET` | En production | Secret de l'authentification (32 caractères minimum) |
+| `BETTER_AUTH_URL` | Oui | Adresse publique de l'application |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Non | Connexion Google (désactivée si vides) |
+| `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, `MICROSOFT_TENANT_ID` | Non | Connexion Microsoft (désactivée si vides) |
+| `TEST_DATABASE_URL` | Pour les tests | Base dédiée aux tests d'intégration |
+| `EMAIL_MODE` | Oui | `simulated` (développement : aucun envoi réel, lien affiché dans le terminal) ou `resend` (envoi réel). `simulated` est refusé en production |
+| `EMAIL_FROM` | En mode `resend` | Expéditeur, sur un domaine vérifié chez Resend |
+| `EMAIL_REPLY_TO` | Non | Adresse de réponse |
+| `RESEND_API_KEY` | En mode `resend` | Clé API Resend (serveur uniquement) |
 | `OPENAI_API_KEY` | Non | Laisser vide tant que les dépenses API ne sont pas autorisées |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Non | Abonnements (étape ultérieure) |
 | `N8N_BASE_URL`, `N8N_API_KEY` | Non | Intégrations (étape ultérieure) |

@@ -13,10 +13,11 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "jsx": "react-jsx",
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true
   },
-  "include": ["prisma/**/*.ts", "prisma.config.ts", "vitest.config.ts", "tests/**/*.ts"],
+  "include": ["prisma/**/*.ts", "prisma.config.ts", "vitest.config.ts", "tests/**/*.ts", "scripts/**/*.ts"],
   "exclude": ["node_modules", "**/.next", "**/dist"]
 }

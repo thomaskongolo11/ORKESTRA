@@ -2,6 +2,7 @@
   "name": "orkestra",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "ORKESTRA — Your business. Orchestrated.",
   "packageManager": "pnpm@12.21.0",
   "engines": {
@@ -14,12 +15,17 @@
     "typecheck": "tsc --noEmit && pnpm -r typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "screenshots": "playwright test --config playwright.screenshots.config.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "admin:create": "tsx scripts/create-super-admin.ts"
   },
   "devDependencies": {
+    "@playwright/test": "1.65.1",
     "@types/node": "^26.6.6",
     "dotenv": "^17.0.0",
     "prisma": "^7.10.1",

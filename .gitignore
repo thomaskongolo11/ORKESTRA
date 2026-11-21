@@ -2,6 +2,9 @@
 node_modules/
 .pnpm-store/
 
+# Client Prisma généré (recréé par `pnpm db:generate`)
+packages/database/generated/
+
 # Builds
 .next/
 out/
@@ -29,3 +32,8 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# Tests de bout en bout et captures
+test-results/
+playwright-report/
+screenshots/
