@@ -34,6 +34,11 @@ export function createOrgUser(email: string, password: string, role: "CLIENT_ADM
   return seed(["org-user", email, password, role]);
 }
 
+/** Invitation CLIENT_ADMIN prête à accepter (crée un SUPER_ADMIN et une entreprise de test). */
+export function createInvitation(email: string, organizationName: string) {
+  return seed(["invitation", email, organizationName]);
+}
+
 /** Ouvre une page et attend que React soit chargé (sinon le formulaire partirait sans JavaScript). */
 export async function openPage(page: Page, path: string) {
   await page.goto(path);

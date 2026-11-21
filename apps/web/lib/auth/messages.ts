@@ -23,6 +23,16 @@ const MESSAGES: Record<string, string> = {
   access_denied: "La connexion a été annulée.",
   account_not_linked: "Cette méthode de connexion n'est pas associée à votre compte. Connectez-vous d'abord, puis associez-la depuis vos paramètres de sécurité.",
   signup_disabled: "Aucun compte ORKESTRA n'est associé à cette identité. L'accès se fait uniquement sur invitation.",
+  // Invitations
+  invitation_email_mismatch: "L'adresse de ce compte Google ou Microsoft ne correspond pas à l'invitation. Utilisez le compte de l'adresse invitée.",
+  email_not_verified: "Le fournisseur n'a pas confirmé que votre adresse e-mail est vérifiée. Choisissez plutôt un mot de passe.",
+  oauth: "La connexion n'a pas abouti. Réessayez.",
+  EMAIL_MISMATCH: "Cette invitation est destinée à une autre adresse e-mail.",
+  ALREADY_MEMBER: "Vous faites déjà partie de cette entreprise.",
+  USED: "Cette invitation a déjà été utilisée.",
+  EXPIRED: "Cette invitation a expiré. Demandez-en une nouvelle à votre administrateur.",
+  REVOKED: "Cette invitation a été annulée.",
+  INVALID: "Lien d'invitation invalide.",
 };
 
 const REASONS: Record<string, string> = {

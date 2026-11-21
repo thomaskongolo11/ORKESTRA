@@ -1,8 +1,10 @@
 /**
  * Règles de sécurité ORKESTRA branchées sur Better Auth.
  *
- *  1. Inscription sur invitation uniquement : toute création de compte par une
- *     requête est refusée (le lot D autorisera la création liée à une invitation valide).
+ *  1. Inscription sur invitation uniquement : une création de compte par requête n'est
+ *     acceptée que via Google / Microsoft, avec une invitation valide (cookie posé par
+ *     /invite/accept), pour la même adresse, déclarée vérifiée par le fournisseur.
+ *     Les comptes avec mot de passe sont créés côté serveur par lib/invitations.
  *  2. SUPER_ADMIN : e-mail + mot de passe uniquement. Toute connexion ou association
  *     Google / Microsoft est refusée, à trois niveaux (validateUserInfo, création
  *     de compte lié, création de session depuis un retour OAuth).
@@ -12,6 +14,8 @@
  */
 import type { PrismaClient } from "@orkestra/database";
 import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
+import { checkOAuthSignupAllowed, completeOAuthSignup } from "../invitations/service";
+import { readInvitationCookie } from "../invitations/tokens";
 import { requestMeta, writeAuditLog } from "./audit";
 import { SUPER_ADMIN_SESSION_MAX_AGE_SECONDS } from "./roles";
 
@@ -60,17 +64,25 @@ export function createAuthHooks(db: PrismaClient, onSecurityEvent?: SecurityEven
     const meta = requestMeta(headersOf(ctx));
 
     if (source.action === "create-user") {
+      const check =
+        source.method === "oauth"
+          ? await checkOAuthSignupAllowed(db, readInvitationCookie(headersOf(ctx)), user)
+          : ({ allowed: false, reason: "invitation_required" } as const);
+      if (check.allowed) return;
+
       await writeAuditLog(db, {
         action: "auth.signup.blocked",
         targetType: "email",
         targetId: typeof user.email === "string" ? user.email : null,
         ...meta,
-        metadata: { method: source.method, provider: source.oauth?.providerId ?? null },
+        metadata: { method: source.method, provider: source.oauth?.providerId ?? null, reason: check.reason },
       });
-      return {
-        error: "invitation_required",
-        errorDescription: "La création de compte se fait uniquement sur invitation.",
+      const descriptions: Record<string, string> = {
+        invitation_required: "La création de compte se fait uniquement sur invitation.",
+        invitation_email_mismatch: "L'adresse de ce compte ne correspond pas à l'invitation.",
+        email_not_verified: "Le fournisseur n'a pas confirmé que cette adresse e-mail est vérifiée.",
       };
+      return { error: check.reason, errorDescription: descriptions[check.reason] ?? descriptions.invitation_required! };
     }
 
     if ((source.action === "sign-in" || source.action === "link-account") && source.method !== "email-password") {
@@ -93,6 +105,19 @@ export function createAuthHooks(db: PrismaClient, onSecurityEvent?: SecurityEven
 
   const databaseHooks = {
     user: {
+      create: {
+        /** Compte créé via Google / Microsoft avec une invitation : rejoindre l'entreprise. */
+        after: async (user: Record<string, unknown>, ctx: HookContext) => {
+          const token = readInvitationCookie(headersOf(ctx));
+          if (!token || !isOAuthCallbackPath(ctx?.path) || typeof user.id !== "string" || typeof user.email !== "string") return;
+          try {
+            await completeOAuthSignup(db, token, { id: user.id, email: user.email }, ctx?.path?.split("/").pop() ?? "oauth");
+          } catch (error) {
+            // La page /invite/complete refera la vérification et affichera l'erreur.
+            console.error("[invitation] Finalisation après OAuth impossible", error);
+          }
+        },
+      },
       update: {
         before: async (user: Record<string, unknown>, ctx: HookContext) => {
           if ("platformRole" in user && ctx) {
