@@ -14,12 +14,24 @@ import { prisma } from "@orkestra/database";
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { organization, twoFactor } from "better-auth/plugins";
+import { hashForKey, sendEmail } from "../email/mailer";
+import { notifySecurityEvent } from "../email/security";
 import { ac, orgRoles } from "./access-control";
+import { writeAuditLog } from "./audit";
 import { getAuthEnv } from "./env";
 import { createAuthHooks } from "./hooks";
 
 const env = getAuthEnv();
-const hooks = createAuthHooks(prisma);
+const hooks = createAuthHooks(prisma, (userId, kind, meta) => notifySecurityEvent(prisma, userId, kind, meta));
+
+/**
+ * Lance une tâche sans faire attendre la réponse HTTP. Pour la réinitialisation du
+ * mot de passe, c'est aussi une protection : la durée de la réponse ne révèle pas
+ * si un compte existe (l'e-mail n'est préparé que pour un compte existant).
+ */
+function inBackground(task: Promise<unknown>, label: string): void {
+  task.catch((error: unknown) => console.error(`[auth] Tâche en arrière-plan échouée (${label})`, error));
+}
 const isProduction = process.env.NODE_ENV === "production";
 
 const socialProviders = {
@@ -59,6 +71,29 @@ export const auth = betterAuth({
     maxPasswordLength: 128,
     revokeSessionsOnPasswordReset: true,
     resetPasswordTokenExpiresIn: 60 * 60,
+    sendResetPassword: async ({ user, url, token }) => {
+      inBackground(
+        (async () => {
+          await writeAuditLog(prisma, {
+            action: "auth.password.reset_requested",
+            actorUserId: user.id,
+            targetType: "user",
+            targetId: user.id,
+          });
+          await sendEmail({
+            template: "reset-password",
+            to: user.email,
+            data: { name: user.name, url, expiresInMinutes: 60 },
+            idempotencyKey: `reset-password:${hashForKey(token)}`,
+            userId: user.id,
+          });
+        })(),
+        "reset-password",
+      );
+    },
+    onPasswordReset: async ({ user }) => {
+      inBackground(notifySecurityEvent(prisma, user.id, "password-changed"), "password-changed");
+    },
   },
 
   socialProviders,

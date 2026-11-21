@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth/auth-client";
 import { authErrorMessage } from "@/lib/auth/messages";
 
-export function ForgotPasswordForm() {
+export function ForgotPasswordForm({ simulated }: { simulated: boolean }) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -57,6 +57,12 @@ export function ForgotPasswordForm() {
           Si un compte correspond à <strong>{email.trim()}</strong>, une demande de réinitialisation a été prise en
           compte. Le lien reçu est valable 1 heure.
         </Alert>
+        {simulated && (
+          <Alert variant="warning">
+            Mode simulé (développement) : aucun e-mail réel n&apos;est envoyé. Le lien s&apos;affiche dans le terminal
+            où tourne <code>pnpm dev</code>.
+          </Alert>
+        )}
         <BackToLogin />
       </div>
     );

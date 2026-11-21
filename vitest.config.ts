@@ -5,6 +5,9 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  // Next.js garde le JSX tel quel (jsx: "preserve") ; Vitest doit le transformer lui-même
+  // (modèles d'e-mails en React).
+  oxc: { jsx: { runtime: "automatic" } },
   resolve: {
     alias: {
       "@/": fileURLToPath(new URL("./apps/web/", import.meta.url)),
