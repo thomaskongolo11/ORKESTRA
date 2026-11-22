@@ -4,6 +4,7 @@
  *
  *   tsx tests/e2e/seed.ts super-admin <email> <password>
  *   tsx tests/e2e/seed.ts org-user <email> <password> <CLIENT_ADMIN|MANAGER|EMPLOYEE>
+ *   tsx tests/e2e/seed.ts invitation <email> <nom-entreprise>   (invitation CLIENT_ADMIN, renvoie le jeton)
  *
  * N'utilise que DATABASE_URL, que playwright.config.ts fait pointer vers la base de TEST.
  */
@@ -48,6 +49,27 @@ async function main(): Promise<void> {
         data: { id: randomBytes(8).toString("hex"), organizationId: orgId, userId, role, createdAt: new Date() },
       });
       console.log(JSON.stringify({ userId, orgId }));
+      return;
+    }
+
+    if (command === "invitation") {
+      // L'argument « password » sert ici de nom d'entreprise.
+      const organizationName = password;
+      const { createSuperAdmin } = await import("../../apps/web/lib/auth/super-admin");
+      const svc = await import("../../apps/web/lib/invitations/service");
+      const { userId: superAdminId } = await createSuperAdmin({
+        email: `seed-sa-${randomBytes(4).toString("hex")}@orkestra.test`,
+        name: "Admin Seed",
+        password: "Seed-Super-Admin-2026!",
+      });
+      const org = await svc.createOrganization(prisma, { userId: superAdminId }, { name: organizationName });
+      const result = await svc.createInvitation(
+        prisma,
+        { userId: superAdminId },
+        { organizationId: org.id, email, role: "CLIENT_ADMIN" },
+        { baseUrl: process.env.BETTER_AUTH_URL ?? "http://localhost:3100" },
+      );
+      console.log(JSON.stringify({ token: result.token, organizationId: org.id }));
       return;
     }
 

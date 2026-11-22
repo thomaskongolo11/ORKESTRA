@@ -49,7 +49,7 @@ Le Manager Agent a une autonomie **intermédiaire** : il ne peut ni modifier ses
 |---|---|---|
 | 1–3 | Analyse, inventaire, plan de développement | ✅ Terminé |
 | 4 | Fondations techniques (monorepo, TypeScript, Next.js, Prisma, Vitest) | ✅ Squelette en place |
-| — | Module authentification et accès (Better Auth, invitations, 2FA, rôles) | 🚧 En cours sur `test-auth` (lots A et B faits) |
+| — | Module authentification et accès (Better Auth, invitations, 2FA, rôles) | 🚧 En cours (lots A, B, C, D, E faits ; F et G à venir) |
 | 5 | Interface et tableau de bord client | ⏳ À faire |
 | 6 | Base de données et API | ⏳ À faire |
 | 7 | Agents IA (Email, Document, Admin) | ⏳ À faire |

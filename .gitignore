@@ -36,4 +36,4 @@ Thumbs.db
 # Tests de bout en bout et captures
 test-results/
 playwright-report/
-screenshots/
+/screenshots/

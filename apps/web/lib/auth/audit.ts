@@ -14,7 +14,11 @@ export type AuditAction =
   | "auth.password.reset_requested"
   | "auth.2fa.enabled"
   | "auth.2fa.disabled"
-  | "auth.account.linked";
+  | "auth.account.linked"
+  | "org.created"
+  | "invitation.created"
+  | "invitation.revoked"
+  | "invitation.accepted";
 
 export type AuditEntry = {
   action: AuditAction;

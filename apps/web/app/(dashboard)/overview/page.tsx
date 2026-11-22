@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireOrgContext } from "@/lib/auth/guards";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,11 @@ export default async function OverviewPage() {
       <p>
         Connecté en tant que {session.user.email} — rôle : {role}.
       </p>
+      {role === "CLIENT_ADMIN" && (
+        <p>
+          <Link href="/settings/team">Gérer l&apos;équipe →</Link>
+        </p>
+      )}
     </main>
   );
 }
