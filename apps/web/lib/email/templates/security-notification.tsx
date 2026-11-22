@@ -3,7 +3,13 @@
 import { Section, Text } from "@react-email/components";
 import { EmailLayout, colors, headingStyle, mutedStyle, textStyle } from "./layout";
 
-export type SecurityEventKind = "password-changed" | "two-factor-enabled" | "two-factor-disabled" | "account-linked";
+export type SecurityEventKind =
+  | "password-changed"
+  | "two-factor-enabled"
+  | "two-factor-disabled"
+  | "backup-codes-regenerated"
+  | "account-linked"
+  | "account-unlinked";
 
 export type SecurityNotificationProps = {
   kind: SecurityEventKind;
@@ -29,10 +35,20 @@ export const SECURITY_EVENTS: Record<SecurityEventKind, { subject: string; title
     title: "Double authentification désactivée",
     body: () => "La double authentification vient d'être désactivée sur votre compte.",
   },
+  "backup-codes-regenerated": {
+    subject: "Nouveaux codes de récupération pour votre compte ORKESTRA",
+    title: "Codes de récupération régénérés",
+    body: () => "De nouveaux codes de récupération ont été générés. Les anciens codes ne fonctionnent plus.",
+  },
   "account-linked": {
     subject: "Nouvelle méthode de connexion sur votre compte ORKESTRA",
     title: "Nouvelle méthode de connexion",
     body: (detail) => `Une nouvelle méthode de connexion${detail ? ` (${detail})` : ""} a été associée à votre compte.`,
+  },
+  "account-unlinked": {
+    subject: "Méthode de connexion retirée de votre compte ORKESTRA",
+    title: "Méthode de connexion retirée",
+    body: (detail) => `La méthode de connexion${detail ? ` ${detail}` : ""} a été retirée de votre compte.`,
   },
 };
 

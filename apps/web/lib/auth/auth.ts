@@ -153,7 +153,7 @@ export const auth = betterAuth({
   },
 
   databaseHooks: hooks.databaseHooks,
-  hooks: { before: hooks.before },
+  hooks: { before: hooks.before, after: hooks.after },
 
   plugins: [
     twoFactor({

@@ -44,7 +44,13 @@ function headersOf(ctx: HookContext): Headers | undefined {
 /** Événements de sécurité signalés au titulaire du compte (e-mail + audit). */
 export type SecurityEventHandler = (
   userId: string,
-  kind: "two-factor-enabled" | "two-factor-disabled" | "account-linked",
+  kind:
+    | "password-changed"
+    | "two-factor-enabled"
+    | "two-factor-disabled"
+    | "backup-codes-regenerated"
+    | "account-linked"
+    | "account-unlinked",
   meta: { detail?: string; ipAddress: string | null; userAgent: string | null },
 ) => Promise<void>;
 
@@ -171,6 +177,14 @@ export function createAuthHooks(db: PrismaClient, onSecurityEvent?: SecurityEven
           });
         },
       },
+      delete: {
+        /** Méthode de connexion retirée : notification au titulaire. */
+        after: async (account: Record<string, unknown>, ctx: HookContext) => {
+          if (!onSecurityEvent || typeof account.userId !== "string" || typeof account.providerId !== "string") return;
+          const provider = account.providerId === "credential" ? "e-mail et mot de passe" : account.providerId.charAt(0).toUpperCase() + account.providerId.slice(1);
+          await onSecurityEvent(account.userId, "account-unlinked", { detail: provider, ...requestMeta(headersOf(ctx)) });
+        },
+      },
     },
     session: {
       create: {
@@ -232,5 +246,20 @@ export function createAuthHooks(db: PrismaClient, onSecurityEvent?: SecurityEven
     }
   });
 
-  return { validateUserInfo, databaseHooks, before };
+  /** Après les endpoints sensibles réussis : notification au titulaire + audit. */
+  const after = createAuthMiddleware(async (ctx) => {
+    if (!onSecurityEvent) return;
+    const returned = ctx.context.returned;
+    if (returned instanceof Error || (returned instanceof Response && !returned.ok)) return;
+    const userId = ctx.context.session?.user.id;
+    if (!userId) return;
+    const meta = requestMeta(ctx.headers);
+    if (ctx.path === "/change-password") {
+      await onSecurityEvent(userId, "password-changed", meta);
+    } else if (ctx.path === "/two-factor/generate-backup-codes") {
+      await onSecurityEvent(userId, "backup-codes-regenerated", meta);
+    }
+  });
+
+  return { validateUserInfo, databaseHooks, before, after };
 }
