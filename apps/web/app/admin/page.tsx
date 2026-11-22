@@ -14,6 +14,9 @@ export default async function AdminPage() {
       <p>
         <Link href="/admin/organizations">Gérer les entreprises clientes →</Link>
       </p>
+      <p>
+        <Link href="/settings/security">Sécurité du compte →</Link>
+      </p>
     </main>
   );
 }

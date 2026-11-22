@@ -13,6 +13,9 @@ export default async function OverviewPage() {
       <p>
         Connecté en tant que {session.user.email} — rôle : {role}.
       </p>
+      <p>
+        <Link href="/settings/security">Sécurité du compte →</Link>
+      </p>
       {role === "CLIENT_ADMIN" && (
         <p>
           <Link href="/settings/team">Gérer l&apos;équipe →</Link>

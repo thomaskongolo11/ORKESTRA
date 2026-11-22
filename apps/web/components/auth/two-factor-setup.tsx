@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Download, ShieldCheck } from "lucide-react";
+import { Check, ShieldCheck } from "lucide-react";
 import QRCode from "qrcode";
 import { useEffect, useState, type FormEvent } from "react";
 import { Alert } from "@/components/ui/alert";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth/auth-client";
 import { authErrorMessage } from "@/lib/auth/messages";
+import { BackupCodesList } from "./backup-codes";
 import { cn } from "@/lib/utils";
 
 type Step = "password" | "scan" | "codes";
@@ -18,7 +19,7 @@ const STEPS: { id: Step; label: string }[] = [
   { id: "codes", label: "Codes de secours" },
 ];
 
-export function TwoFactorSetup({ required }: { required: boolean }) {
+export function TwoFactorSetup({ required, finishHref = "/auth/callback" }: { required: boolean; finishHref?: string }) {
   const [step, setStep] = useState<Step>("password");
   const [password, setPassword] = useState("");
   const [totpURI, setTotpURI] = useState<string | null>(null);
@@ -27,7 +28,6 @@ export function TwoFactorSetup({ required }: { required: boolean }) {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -70,28 +70,6 @@ export function TwoFactorSetup({ required }: { required: boolean }) {
       return;
     }
     setStep("codes");
-  }
-
-  async function copyCodes() {
-    await navigator.clipboard.writeText(backupCodes.join("\n"));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
-  function downloadCodes() {
-    const content = [
-      "ORKESTRA — Codes de récupération",
-      `Générés le ${new Date().toLocaleString("fr-BE")}`,
-      "Chaque code ne fonctionne qu'une seule fois. Conservez ce fichier en lieu sûr.",
-      "",
-      ...backupCodes,
-    ].join("\n");
-    const url = URL.createObjectURL(new Blob([content], { type: "text/plain;charset=utf-8" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "orkestra-codes-recuperation.txt";
-    link.click();
-    URL.revokeObjectURL(url);
   }
 
   const currentIndex = STEPS.findIndex((s) => s.id === step);
@@ -201,23 +179,7 @@ export function TwoFactorSetup({ required }: { required: boolean }) {
               <strong className="text-navy">Ils ne seront plus jamais affichés.</strong>
             </p>
           </div>
-          <ul className="grid grid-cols-2 gap-2 rounded-lg border bg-card p-4 font-mono text-sm text-navy">
-            {backupCodes.map((c) => (
-              <li key={c} className="rounded bg-mist px-2 py-1.5 text-center tracking-wider">
-                {c}
-              </li>
-            ))}
-          </ul>
-          <div className="grid grid-cols-2 gap-3">
-            <Button type="button" variant="outline" onClick={copyCodes}>
-              {copied ? <Check /> : <Copy />}
-              {copied ? "Copiés" : "Copier"}
-            </Button>
-            <Button type="button" variant="outline" onClick={downloadCodes}>
-              <Download />
-              Télécharger
-            </Button>
-          </div>
+          <BackupCodesList codes={backupCodes} />
           <label className="flex items-start gap-3 text-sm text-navy">
             <input
               type="checkbox"
@@ -227,7 +189,7 @@ export function TwoFactorSetup({ required }: { required: boolean }) {
             />
             J&apos;ai conservé mes codes de récupération en lieu sûr.
           </label>
-          <Button type="button" className="w-full" disabled={!saved} onClick={() => window.location.assign("/auth/callback")}>
+          <Button type="button" className="w-full" disabled={!saved} onClick={() => window.location.assign(finishHref)}>
             <ShieldCheck />
             Terminer
           </Button>

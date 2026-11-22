@@ -32,6 +32,7 @@ export default async function TeamPage() {
       nav={[
         { href: "/overview", label: "Overview" },
         { href: "/settings/team", label: "Équipe" },
+        { href: "/settings/security", label: "Sécurité" },
       ]}
     >
       <div className="grid gap-6">

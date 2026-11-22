@@ -1,5 +1,5 @@
 import { test, type Page } from "@playwright/test";
-import { createInvitation, createSuperAdmin, expectPath, login, openPage, resetRateLimit, totpCode, uniqueEmail } from "../e2e/fixtures";
+import { createInvitation, createOrgUser, createSuperAdmin, expectPath, login, openPage, resetRateLimit, totpCode, uniqueEmail } from "../e2e/fixtures";
 
 test.skip(!process.env.TEST_DATABASE_URL, "TEST_DATABASE_URL non définie.");
 
@@ -71,6 +71,9 @@ test("SUPER_ADMIN : activation de la 2FA puis vérification", async ({ page, con
   await page.getByRole("heading", { name: "Chauffage Lambert" }).waitFor();
   await shot(page, "13-admin-entreprise-detail");
 
+  await openPage(page, "/settings/security");
+  await shot(page, "17-securite-super-admin");
+
   await context.clearCookies();
   await login(page, email, password);
   await expectPath(page, "/two-factor");
@@ -94,4 +97,18 @@ test("invitation : acceptation puis gestion de l'équipe", async ({ page }) => {
   await page.getByRole("button", { name: "Envoyer l'invitation" }).click();
   await page.getByText(/Mode simulé/).waitFor();
   await shot(page, "15-equipe-client-admin");
+});
+
+test("sécurité : compte client avec deux sessions", async ({ browser }) => {
+  const email = uniqueEmail("captures-secu");
+  createOrgUser(email, "Captures-Securite-2026", "MANAGER");
+  const other = await (await browser.newContext()).newPage();
+  await login(other, email, "Captures-Securite-2026");
+  await expectPath(other, "/overview");
+  const viewport = test.info().project.use.viewport;
+  const page = await (await browser.newContext(viewport ? { viewport } : {})).newPage();
+  await login(page, email, "Captures-Securite-2026");
+  await expectPath(page, "/overview");
+  await openPage(page, "/settings/security");
+  await shot(page, "16-securite-client");
 });

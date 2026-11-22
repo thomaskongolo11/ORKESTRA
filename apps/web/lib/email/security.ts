@@ -8,7 +8,9 @@ const AUDIT_ACTIONS: Record<SecurityEventKind, AuditAction> = {
   "password-changed": "auth.password.changed",
   "two-factor-enabled": "auth.2fa.enabled",
   "two-factor-disabled": "auth.2fa.disabled",
+  "backup-codes-regenerated": "auth.2fa.backup_codes_regenerated",
   "account-linked": "auth.account.linked",
+  "account-unlinked": "auth.account.unlinked",
 };
 
 /**
